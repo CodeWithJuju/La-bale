@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "dxqkN4pC4dM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Juliano\\Documents\\Codex\\2026-05-24\\desejo-criar-um-mod-para-o\\SilksongPerformanceMod\\SilksongPerformanceMod.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Juliano\\.nuget\\packages\\netstandard.library.ref\\2.1.0\\netstandard.library.ref.2.1.0.nupkg.sha512"
+  ],
+  "logs": []
+}

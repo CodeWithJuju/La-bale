@@ -1,0 +1,8 @@
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\obj\Release\netstandard2.1\SilksongPerformanceMod.csproj.AssemblyReference.cache
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\obj\Release\netstandard2.1\SilksongPerformanceMod.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\obj\Release\netstandard2.1\SilksongPerformanceMod.csproj.CoreCompileInputs.cache
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\bin\Release\netstandard2.1\Performance.deps.json
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\bin\Release\netstandard2.1\Performance.dll
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\bin\Release\netstandard2.1\Performance.pdb
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\obj\Release\netstandard2.1\Performance.dll
+C:\Users\Juliano\Documents\Codex\2026-05-24\desejo-criar-um-mod-para-o\SilksongPerformanceMod\obj\Release\netstandard2.1\Performance.pdb
