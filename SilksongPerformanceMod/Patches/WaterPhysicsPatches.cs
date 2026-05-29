@@ -1,5 +1,5 @@
 using System;
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
@@ -23,7 +23,16 @@ internal static class WaterPhysicsPatches
     private static readonly AccessTools.FieldRef<WaterPhysics, float> TopRef =
         AccessTools.FieldRefAccess<WaterPhysics, float>("top");
 
-    private static readonly ConditionalWeakTable<WaterPhysics, SpreadBuffers> Buffers = new();
+    // CORRIGIDO: substituído ConditionalWeakTable<WaterPhysics, SpreadBuffers> por Dictionary simples.
+    //
+    // Motivo: ConditionalWeakTable usa lock interno em cada chamada a GetOrCreateValue para
+    // garantir thread-safety. Em Unity, todo código de gameplay roda na main thread, portanto
+    // esse lock era overhead puro: acontecia 50+ vezes por segundo para cada instância de
+    // WaterPhysics presente na cena, sem nenhum benefício.
+    //
+    // Dictionary<int, SpreadBuffers> keyed por GetInstanceID() tem lookup O(1) sem lock,
+    // e a entrada é removida no OnDestroy do WaterPhysics para não acumular entradas mortas.
+    private static readonly Dictionary<int, SpreadBuffers> Buffers = new();
 
     [HarmonyPatch(typeof(WaterPhysics), "FixedUpdate")]
     [HarmonyPrefix]
@@ -44,9 +53,17 @@ internal static class WaterPhysicsPatches
         }
 
         float top = TopRef(__instance);
-        SpreadBuffers buffers = Buffers.GetOrCreateValue(__instance);
+
+        int instanceId = __instance.GetInstanceID();
+        if (!Buffers.TryGetValue(instanceId, out SpreadBuffers? buffers))
+        {
+            buffers = new SpreadBuffers();
+            Buffers[instanceId] = buffers;
+        }
+
         buffers.EnsureLength(positions.Length);
 
+        // Passo 1: força de mola + atualização de posição e velocidade para cada ponto.
         for (int i = 0; i < positions.Length; i++)
         {
             float acceleration = 0f - (__instance.spring * (positions[i].y - top) + velocities[i] * __instance.damping);
@@ -60,6 +77,20 @@ internal static class WaterPhysicsPatches
             lineRenderer.SetPosition(i, new Vector3(position.x, position.y, __instance.transform.position.z + __instance.lineZ));
         }
 
+        // Passo 2: 8 iterações de propagação lateral (spread) — modifica APENAS velocidades.
+        //
+        // CORRIGIDO: removido o loop de posição que existia após este bloco na versão anterior.
+        //
+        // Motivo do bug original: o loop de posição estava FORA do for(j < 8), então:
+        //   1. buffers.Left[k] e buffers.Right[k] eram sobrescritos a cada iteração de j,
+        //      portanto após o loop continham apenas os valores da 8ª iteração (não a soma).
+        //   2. As posições eram modificadas UMA vez com esses valores obsoletos, quando o
+        //      original não modifica posições no spread phase — apenas velocidades.
+        //   3. Resultado: deslocamento extra incorreto aplicado às posições em cada FixedUpdate,
+        //      fazendo a água oscilar de forma errada e causando trabalho extra desnecessário.
+        //
+        // O spread phase do WaterPhysics modifica somente velocidades; posições são atualizadas
+        // no início do próximo FixedUpdate via "positions[i].y += velocities[i]" (Passo 1 acima).
         for (int j = 0; j < 8; j++)
         {
             for (int k = 0; k < positions.Length; k++)
@@ -78,24 +109,19 @@ internal static class WaterPhysicsPatches
             }
         }
 
-        for (int l = 0; l < positions.Length; l++)
-        {
-            if (l > 0)
-            {
-                Vector2 leftPosition = positions[l - 1];
-                leftPosition.y += buffers.Left[l];
-                positions[l - 1] = leftPosition;
-            }
-
-            if (l < positions.Length - 1)
-            {
-                Vector2 rightPosition = positions[l + 1];
-                rightPosition.y += buffers.Right[l];
-                positions[l + 1] = rightPosition;
-            }
-        }
-
         return false;
+    }
+
+    // CORRIGIDO: limpa a entrada do dicionário quando WaterPhysics é destruído,
+    // evitando que entradas mortas se acumulem ao longo da sessão.
+    [HarmonyPatch(typeof(WaterPhysics), "OnDestroy")]
+    [HarmonyPostfix]
+    private static void CleanupBuffersOnDestroy(WaterPhysics __instance)
+    {
+        if (ModSettings.EnableWaterPhysicsAllocationFix.Value)
+        {
+            Buffers.Remove(__instance.GetInstanceID());
+        }
     }
 
     private sealed class SpreadBuffers
