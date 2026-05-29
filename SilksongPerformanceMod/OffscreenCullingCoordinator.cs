@@ -180,6 +180,16 @@ internal sealed class OffscreenCullingCoordinator : MonoBehaviour
     {
         PruneDestroyedCandidates();
 
+        // CORRIGIDO: limpa o set de rejeitados a cada scan completo.
+        //
+        // Motivo: Instance IDs de objetos rejeitados nunca eram removidos, causando
+        // crescimento ilimitado do HashSet ao longo da sessão (memory leak). Objetos
+        // destruídos liberam seus IDs e o Unity pode reutilizá-los em novos objetos —
+        // sem limpeza, novos objetos com IDs "reciclados" seriam incorretamente rejeitados.
+        // Limpar no início de cada scan é seguro porque PruneDestroyedCandidates já foi
+        // chamado e os candidatos válidos estão registrados nos seus próprios sets de IDs.
+        _rejectedCandidateIds.Clear();
+
         if (ModSettings.EnableOffscreenLoopingParticleSuspend.Value)
         {
             foreach (ParticleSystem particleSystem in FindActiveObjects<ParticleSystem>())
